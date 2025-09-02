@@ -1,82 +1,62 @@
-AWS Academy 手順書
-
-1.ログイン方法
-ssh -i <秘密鍵.pem> ec2-user@<EC2のパブリックIP>でログイン
-
-2. Docker および Docker Compose のインストール
-(1)パッケージ更新
-sudo yum update -y
-
-(2)Dockerインストール
-sudo amazon-linux-extras enable docker
-sudo yum install -y docker
-
-(3)Dockerサービス起動＆権限設定
-sudo systemctl start docker
+sudo dnf update -y
+sudo dnf install -y git
+sudo dnf install -y docker
 sudo systemctl enable docker
+sudo systemctl start docker
+sudo mkdir -p /usr/local/lib/docker/cli-plugins/
+sudo curl -SL https://github.com/docker/compose/releases/download/v2.36.0/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
+sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 sudo usermod -aG docker ec2-user
+再ログイン後に確認:
 
-(4) Docker Compose インストール
-sudo curl -SL https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-
-確認：
 docker --version
-docker-compose --version
+docker compose version
 
-3. プロジェクト構成（ソースコード配置）
-プロジェクトを /home/ec2-user/app に配置する例。
+gitからソースコードを取得
 
-app/
-├── docker-compose.yml
-├── web/                  # Webアプリケーション用ソースコード
-│   ├── Dockerfile
-│   └── src/...
-└── db/
-    └── schema.sql          # DB初期化スクリプト（テーブル作成用）
+git clone https://github.com/Asano2004/bbs-project.git
+cd kadai
 
-4. 環境の起動
-(1) ビルド
+
+
+
+次に.envを作成
+cat > .env <<'EOF'
+MYSQL_ROOT_PASSWORD=changeme_root
+MYSQL_DATABASE=example_db
+MYSQL_USER=bbs_user
+MYSQL_PASSWORD=changeme_app
+EOF
+
+アップロード先を用意する
+mkdir -p public/uploads
+chmod 777 public/uploads
+
+
+# ビルド
 docker compose build
 
-(2) 起動
-docker compose up -d
+# 起動
+docker compose up
 
-(3) 状態確認
-docker compose ps
-docker compose logs -f
 
-5.MySQLコンテナに入る方法
-コンテナ名を確認：
-docker ps
+テーブルの作成方法
+MySQL コンテナに入ってテーブルを作成
 
-出力例：
-CONTAINER ID   IMAGE       COMMAND                  PORTS                               NAMES
-abcd12345678   mysql:8.0   "docker-entrypoint..."   0.0.0.0:3306->3306/tcp              app_db_1
+docker compose exec mysql mysql example_db
 
-ログインコマンド：
-docker exec -it app_db_1 mysql -uroot -p
-
-6. データベース選択
-ログインしたら、データベースを選択する。
-USE app_db;
-
-7. テーブル作成の例
-例：
-CREATE TABLE users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(50) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
-  email VARCHAR(100),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+sql文を追加
+CREATE TABLE `bbs_entries` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `body` TEXT NOT NULL,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE posts (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  title VARCHAR(100) NOT NULL,
-  content TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+ALTER TABLE bbs_entries ADD COLUMN image_filename VARCHAR(255) NULL AFTER body;
+
+# ビルド
+docker compose build
+
+# 起動
+docker compose up
 
