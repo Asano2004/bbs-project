@@ -15,7 +15,7 @@ docker compose version
 gitからソースコードを取得
 
 git clone https://github.com/Asano2004/bbs-project.git
-cd kadai
+cd bbs-project
 
 
 
