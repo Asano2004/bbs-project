@@ -17,46 +17,22 @@ gitからソースコードを取得
 git clone https://github.com/Asano2004/bbs-project.git
 cd bbs-project
 
-
-
-
-次に.envを作成
-cat > .env <<'EOF'
-MYSQL_ROOT_PASSWORD=changeme_root
-MYSQL_DATABASE=example_db
-MYSQL_USER=bbs_user
-MYSQL_PASSWORD=changeme_app
-EOF
-
-アップロード先を用意する
-mkdir -p public/uploads
-chmod 777 public/uploads
-
-
-# ビルド
+1. Docker コンテナのビルド・起動
 docker compose build
+docker compose up -d
 
-# 起動
-docker compose up
+正常に起動すると、以下のようなコンテナが起動する。
+docker compose ps
 
+2. データベースの初期化（初回のみ）
+docker compose exec web bash
 
-テーブルの作成方法
-MySQL コンテナに入ってテーブルを作成
+SQL ファイルを使用して初期化。
+コンテナ内で以下を実行。
+mysql -u root -p example_db < init.sql
+（※ パスワードは docker-compose.yml に記載のものを使用）
 
-docker compose exec mysql mysql example_db
-
-sql文を追加
-CREATE TABLE `bbs_entries` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `body` TEXT NOT NULL,
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-ALTER TABLE bbs_entries ADD COLUMN image_filename VARCHAR(255) NULL AFTER body;
-
-# ビルド
-docker compose build
-
-# 起動
-docker compose up
-
+3. ブラウザからアクセス
+EC2 インスタンスの パブリックIPアドレス を確認し、
+ブラウザから以下にアクセス
+例：http://<EC2のパブリックIPアドレス>/bbs.php
