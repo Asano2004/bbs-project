@@ -1,52 +1,53 @@
 <?php
 
 // ########################## セッションの処理ここから
-// セッションIDの取得(なければ新規で作成&設定)
+// セッションIDをCookieから取得、なければランダムに生成
 $session_cookie_name = 'session_id';
 $session_id = $_COOKIE[$session_cookie_name] ?? base64_encode(random_bytes(64));
+// CookieにセッションIDがなければ新しく設定
 if (!isset($_COOKIE[$session_cookie_name])) {
     setcookie($session_cookie_name, $session_id);
 }
-// 接続 (redisコンテナの6379番ポートに接続)
+// Redisサーバーに接続（セッションデータの保存先）
 $redis = new Redis();
 $redis->connect('redis', 6379);
-// Redisにセッション変数を保存しておくキー
+// Redisに保存するキー名を生成
 $redis_session_key = "session-" . $session_id;
-// Redisからセッションのデータを読み込み
-// 既にセッション変数(の配列)が何かしら格納されていればそれを，なければ空の配列を $session_values変数に保存
+// Redisからセッションデータを取得。既存データがあればそれを、なければ空の配列を取得
 $session_values = $redis->exists($redis_session_key)
   ? json_decode($redis->get($redis_session_key), true)
   : [];
 // ########################## セッションの処理ここまで
 
 
-// セッションにログインIDが無ければ (=ログインされていない状態であれば) ログイン画面にリダイレクトさせる
+// ログインチェック：セッションにログインユーザーIDがなければログイン画面にリダイレクト
 if (empty($session_values['login_user_id'])) {
   header("HTTP/1.1 302 Found");
   header("Location: ./login.php");
   return;
 }
 
-// DBに接続
+// MySQLデータベースに接続
 $dbh = new PDO('mysql:host=mysql;dbname=example_db', 'root', '');
 
-// セッションにあるログインIDから、ログインしている対象の会員情報を引く
+// ログイン中のユーザー情報をデータベースから取得
 $insert_sth = $dbh->prepare("SELECT * FROM users WHERE id = :id");
 $insert_sth->execute([
     ':id' => $session_values['login_user_id'],
 ]);
 $user = $insert_sth->fetch();
 
+// フォーム送信処理：POSTでnameが送られてきた場合
 if (isset($_POST['name'])) {
   // フォームから name が送信されてきた場合の処理
 
-  // ログインしている会員情報のnameカラムを更新する
+  // データベースのユーザー名を更新
   $insert_sth = $dbh->prepare("UPDATE users SET name = :name WHERE id = :id");
   $insert_sth->execute([
       ':id' => $user['id'],
       ':name' => $_POST['name'],
   ]);
-  // 成功したら成功したことを示すクエリパラメータつきのURLにリダイレクト
+  // 更新成功後、成功メッセージを表示するためにリダイレクト（PRGパターン）
   header("HTTP/1.1 303 See Other");
   header("Location: ./edit_name.php?success=1");
   return;
@@ -54,12 +55,14 @@ if (isset($_POST['name'])) {
 ?>
 
 <h1>名前変更</h1>
+<!-- 名前変更フォーム：現在の名前を初期値として表示 -->
 <form method="POST">
   <input type="text" name="name" value="<?= htmlspecialchars($user['name']) ?>">
   <button type="submit">決定</button>
 </form>
 
 <?php if(!empty($_GET['success'])): ?>
+<!-- 成功メッセージ：URLパラメータにsuccessがある場合に表示 -->
 <div style="color: green;">
   名前の変更処理が完了しました。
 </div>
