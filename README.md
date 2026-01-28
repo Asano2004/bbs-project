@@ -67,12 +67,21 @@ CREATE TABLE `user_relationships` (
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE `user_relationships` (
+CREATE TABLE `users` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `followee_user_id` INT UNSIGNED NOT NULL,
-  `follower_user_id` INT UNSIGNED NOT NULL,
+  `name` TEXT NOT NULL,
+  `email` TEXT NOT NULL,
+  `password` TEXT NOT NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE `users` ADD COLUMN icon_filename TEXT DEFAULT NULL;
+
+ALTER TABLE `users` ADD COLUMN introduction TEXT DEFAULT NULL;
+
+ALTER TABLE `users` ADD COLUMN cover_filename TEXT DEFAULT NULL;
+
+ALTER TABLE `users` ADD COLUMN birthday DATE DEFAULT NULL;
 
 3. ブラウザからアクセス
 EC2 インスタンスの パブリックIPアドレス を確認し、
