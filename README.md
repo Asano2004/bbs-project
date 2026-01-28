@@ -18,7 +18,7 @@ git clone https://github.com/Asano2004/bbs-project.git
 cd bbs-project
 
 1. Docker コンテナのビルド・起動
-docker compose up --build 
+docker compose up -d --build 
 
 正常に起動すると、以下のようなコンテナが起動する。
 docker compose ps
