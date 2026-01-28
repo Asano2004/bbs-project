@@ -23,6 +23,7 @@ docker compose up --build
 正常に起動すると、以下のようなコンテナが起動する。
 docker compose ps
 
+作成
 vim php.ini
 
 post_max_size = 5M
@@ -41,6 +42,8 @@ mysql -u root -p example_db < init.sql
 （※ パスワードは docker-compose.yml に記載のものを使用）
 
 SQL追記
+
+docker compose exec mysql mysql example_db
 
 CREATE TABLE `access_logs` (
   `id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
